@@ -21,40 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.jenkins.plugins.junitpipelinestep;
+ 
 
-import hudson.Extension;
-import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.ProxyWhitelist;
-import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.StaticWhitelist;
-import org.jenkinsci.plugins.workflow.cps.CpsScript;
-import org.jenkinsci.plugins.workflow.cps.GlobalVariable;
+node {
+    checkout scm
 
-import java.io.IOException;
+    sh "unzip JUnitResultArchiverTest.zip"
 
-@Extension
-public class JUnitPipelineStepDSL extends GlobalVariable {
-    @Override
-    public String getName() {
-        return "junit";
-    }
+    // Next two lines needed to make sure the test files are new enough.
+    sh "mkdir -p target/surefire-results"
+    sh "cp jobs/junit/workspace/* target/surefire-results"
 
-    @Override
-    public Object getValue(CpsScript script) throws Exception {
-        return script.getClass()
-                .getClassLoader()
-                .loadClass("io.jenkins.plugins.junitpipelinestep.JUnitPipelineStep")
-                .getConstructor(CpsScript.class)
-                .newInstance(script);
-    }
+    echo "hello"
 
-    @Extension
-    public static class JUnitPipelineStepWhitelist extends ProxyWhitelist {
-        public JUnitPipelineStepWhitelist() throws IOException {
-            super(new StaticWhitelist(
-                    "method java.util.Map containsKey java.lang.Object"
-            ));
-        }
-    }
-
-
+    junit(testResults: "target/surefire-results/TEST*.xml")
 }

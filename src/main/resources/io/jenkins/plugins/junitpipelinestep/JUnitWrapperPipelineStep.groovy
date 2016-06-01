@@ -21,40 +21,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.jenkins.plugins.junitpipelinestep;
+package io.jenkins.plugins.junitpipelinestep
 
-import hudson.Extension;
-import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.ProxyWhitelist;
-import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.StaticWhitelist;
-import org.jenkinsci.plugins.workflow.cps.CpsScript;
-import org.jenkinsci.plugins.workflow.cps.GlobalVariable;
+import org.jenkinsci.plugins.workflow.cps.CpsScript
 
-import java.io.IOException;
+class JUnitWrapperPipelineStep implements Serializable {
+    CpsScript script
 
-@Extension
-public class JUnitPipelineStepDSL extends GlobalVariable {
-    @Override
-    public String getName() {
-        return "junit";
+    JUnitWrapperPipelineStep(CpsScript script) {
+        this.script = script
     }
 
-    @Override
-    public Object getValue(CpsScript script) throws Exception {
-        return script.getClass()
-                .getClassLoader()
-                .loadClass("io.jenkins.plugins.junitpipelinestep.JUnitPipelineStep")
-                .getConstructor(CpsScript.class)
-                .newInstance(script);
-    }
+    def call(Map args, Closure closure) {
+        closure.delegate = script
+        closure.resolveStrategy = Closure.DELEGATE_FIRST
 
-    @Extension
-    public static class JUnitPipelineStepWhitelist extends ProxyWhitelist {
-        public JUnitPipelineStepWhitelist() throws IOException {
-            super(new StaticWhitelist(
-                    "method java.util.Map containsKey java.lang.Object"
-            ));
+        String testResults = args.containsKey("testResults") ? args.testResults : ""
+        boolean keepLongStdio = args.containsKey("keepLongStdio") ? args.keepLongStdio : false
+        boolean allowEmptyResults = args.containsKey("allowEmptyResults") ? args.allowEmptyResults : false
+        Double healthScaleFactor = args.containsKey("healthScaleFactor") ? args.healthScaleFactor : 1.0
+
+        try {
+            closure.call()
+        } catch (Exception e) {
+            throw e
+        } finally {
+            script.step($class: "JUnitResultArchiver",
+                testResults: testResults,
+                keepLongStdio: keepLongStdio,
+                allowEmptyResults: allowEmptyResults,
+                healthScaleFactor: healthScaleFactor)
         }
     }
-
-
 }

@@ -26,7 +26,7 @@
 node {
     checkout scm
 
-    junitArchiver(testResults: "target/surefire-results/TEST*.xml") {
+    junitWrapper(testResults: "target/surefire-results/TEST*.xml") {
         sh "unzip JUnitResultArchiverTest.zip"
 
         // Next two lines needed to make sure the test files are new enough.

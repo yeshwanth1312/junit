@@ -32,25 +32,16 @@ class JUnitPipelineStep implements Serializable {
         this.script = script
     }
 
-    def call(Map args, Closure closure) {
-        closure.delegate = script
-        closure.resolveStrategy = Closure.DELEGATE_FIRST
-
+    def call(Map args) {
         String testResults = args.containsKey("testResults") ? args.testResults : ""
         boolean keepLongStdio = args.containsKey("keepLongStdio") ? args.keepLongStdio : false
         boolean allowEmptyResults = args.containsKey("allowEmptyResults") ? args.allowEmptyResults : false
         Double healthScaleFactor = args.containsKey("healthScaleFactor") ? args.healthScaleFactor : 1.0
 
-        try {
-            closure.call()
-        } catch (Exception e) {
-            throw e
-        } finally {
-            script.step($class: "JUnitResultArchiver",
-                testResults: testResults,
-                keepLongStdio: keepLongStdio,
-                allowEmptyResults: allowEmptyResults,
-                healthScaleFactor: healthScaleFactor)
-        }
+        script.step($class: "JUnitResultArchiver",
+            testResults: testResults,
+            keepLongStdio: keepLongStdio,
+            allowEmptyResults: allowEmptyResults,
+            healthScaleFactor: healthScaleFactor)
     }
 }
